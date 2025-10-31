@@ -18,4 +18,6 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-app.listen(3000, () => console.log("Server is running on post" + PORT));
+app.listen(PORT, "0.0.0.0", () =>
+  console.log("Server is running on port " + PORT)
+);
