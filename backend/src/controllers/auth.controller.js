@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { generateToken } from "../utils/jwt.util.js";
 import { sendWelcomeEmail } from "../emails/emailHandlers.js";
 import "dotenv/config";
-
+import cloudinary from "../lib/cloudinary.js";
 export const signup = async (req, res) => {
   try {
     const { fullName, email, password } = req.body;
@@ -61,7 +61,7 @@ export const login = async (req, res) => {
       profilePic: user.profilePic,
     });
   } catch (error) {
-    console.error("Error in controler");
+    console.error("Error in controler", error);
     return res.status(500).json({ message: "Internal Server" });
   }
 };
@@ -69,4 +69,21 @@ export const login = async (req, res) => {
 export const logout = async (_, res) => {
   res.cookie("jwt", "", { maxAge: 0 });
   res.status(200).json({ message: "logout succesfully" });
+};
+
+export const updateProfile = async (req, res) => {
+  try {
+    const { profilePic } = req.body;
+    const userId = req.user._id;
+    const uploadResponse = await cloudinary.uploader.upload(profilePic);
+    const updateUser = await User.findByIdAndUpdate(
+      userId,
+      { profilePic: uploadResponse.secure_url },
+      { new: true }
+    );
+    res.status(200).json(updateUser);
+  } catch (error) {
+    console.error("Error in controler", error);
+    return res.status(500).json({ message: "Internal Server" });
+  }
 };
