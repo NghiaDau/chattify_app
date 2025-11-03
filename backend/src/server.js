@@ -8,8 +8,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 dotenv.config();
 import "dotenv/config";
-
-const app = express();
+import { server, app } from "./lib/socket.js";
+//const app = express();
 const __dirname = path.resolve();
 const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: "10mb" }));
@@ -27,7 +27,7 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-app.listen(PORT, "0.0.0.0", () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log("Server is running on port " + PORT);
   connectDB();
 });
