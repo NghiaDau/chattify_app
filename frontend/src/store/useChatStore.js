@@ -19,7 +19,15 @@ export const useChatStore = create((set, get) => ({
   },
 
   setActiveTab: (tab) => set({ activeTab: tab }),
-  setSelectedUser: (selectedUser) => set({ selectedUser }),
+  //setSelectedUser: (selectedUser) => set({ selectedUser }),
+  setSelectedUser: (selectedUser) => {
+    const { chats } = get();
+    // Reset cờ hasUnread của user vừa được chọn
+    const updatedChats = chats.map((c) =>
+      c._id === selectedUser._id ? { ...c, hasUnread: false } : c
+    );
+    set({ selectedUser, chats: updatedChats });
+  },
 
   getAllContacts: async () => {
     set({ isUserLoading: true });
@@ -86,27 +94,67 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
+  // subscribeToNewMessages: () => {
+  //   const { selectedUser, isSoundEnabled } = get();
+  //   if (!selectedUser) return;
+  //   const { socket } = useAuthStore.getState();
+  //   socket.on("new-message", (newMessage) => {
+  //     const isMessageFromSelectedUser =
+  //       newMessage.senderId === selectedUser._id;
+  //     if (!isMessageFromSelectedUser) return;
+  //     const currentMessages = get().messages;
+  //     set({ messages: [...currentMessages, newMessage] });
+  //     if (isSoundEnabled) {
+  //       const notificationSound = new Audio("/sounds/notification.mp3");
+
+  //       notificationSound.currentTime = 0; // reset to start
+  //       notificationSound
+  //         .play()
+  //         .catch((e) => console.log("Audio play failed:", e));
+  //     }
+  //   });
+  // },
+
   subscribeToNewMessages: () => {
-    const { selectedUser, isSoundEnabled } = get();
-    if (!selectedUser) return;
     const { socket } = useAuthStore.getState();
+    const { isSoundEnabled, chats } = get();
+
+    socket.off("new-message"); // tránh đăng ký trùng
     socket.on("new-message", (newMessage) => {
-      const isMessageFromSelectedUser =
-        newMessage.senderId === selectedUser._id;
-      if (!isMessageFromSelectedUser) return;
       const currentMessages = get().messages;
-      set({ messages: [...currentMessages, newMessage] });
+      const { selectedUser: currentSelectedUser } = get();
+
+      // Nếu đang mở đúng đoạn chat
+      if (
+        currentSelectedUser &&
+        newMessage.senderId === currentSelectedUser._id
+      ) {
+        set({ messages: [...currentMessages, newMessage] });
+      } else {
+        // Nếu đang ở ngoài đoạn chat → cập nhật danh sách chats
+        const updatedChats = chats.map((c) =>
+          c._id === newMessage.senderId ? { ...c, hasUnread: true } : c
+        );
+        set({ chats: updatedChats });
+
+        // ✅ Gửi thông báo trình duyệt
+        if (Notification.permission === "granted") {
+          new Notification("Tin nhắn mới", {
+            body: `${newMessage.senderName}: ${
+              newMessage.text || "Đã gửi một hình ảnh"
+            }`,
+            icon: "/icon.png",
+          });
+        }
+
+        // ✅ Phát âm thanh
+        if (isSoundEnabled) {
+          const sound = new Audio("/sounds/notification.mp3");
+          sound.play().catch(() => {});
+        }
+      }
     });
-    if (isSoundEnabled) {
-      const notificationSound = new Audio("/sounds/notification.mp3");
-
-      notificationSound.currentTime = 0; // reset to start
-      notificationSound
-        .play()
-        .catch((e) => console.log("Audio play failed:", e));
-    }
   },
-
   unSubscribeToNewMessages: () => {
     const { socket } = useAuthStore.getState();
     socket.off("new-message");

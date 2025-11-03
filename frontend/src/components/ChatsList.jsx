@@ -21,11 +21,17 @@ function ChatsList() {
       {chats.map((chat) => (
         <div
           key={chat._id}
-          className="bg-cyan-500/10 p-4 rounded-lg cursor-pointer hover:bg-cyan-500/20 transition-colors"
+          className="relative bg-cyan-500/10 p-4 rounded-lg cursor-pointer hover:bg-cyan-500/20 transition-colors"
           onClick={() => setSelectedUser(chat)}
         >
+          {chat.hasUnread && (
+            <span className="absolute top-2 right-2 flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
+            </span>
+          )}
+
           <div className="flex items-center gap-3">
-            {/* TODO: FIX THIS ONLINE STATUS AND MAKE IT WORK WITH SOCKET */}
             <div
               className={`avatar ${
                 onlineUsers.includes(chat._id) ? "online" : "offline"
@@ -38,6 +44,7 @@ function ChatsList() {
                 />
               </div>
             </div>
+
             <h4 className="text-slate-200 font-medium truncate">
               {chat.fullName}
             </h4>
