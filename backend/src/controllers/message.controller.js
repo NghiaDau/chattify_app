@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import Message from "../models/Message.js";
 import cloudinary from "../lib/cloudinary.js";
+import { io, getSocketByUserId } from "../lib/socket.js";
 export const getChatPartners = async (req, res) => {
   try {
     const loggedInUserId = req.user._id;
@@ -71,8 +72,12 @@ export const sendMessage = async (req, res) => {
       text,
       image: imageUrl,
     });
-
     await newMesage.save();
+
+    const receiverSocketId = getSocketByUserId(receiverId);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("new-message", newMesage);
+    }
 
     res.status(201).json(newMesage);
   } catch (error) {
